@@ -6,7 +6,7 @@ import (
 
 type Model struct {
 	gorm.Model
-	Name        string
+	Name        string `gorm:"not null"`
 	TrainedDate uint
 	Report      map[string]interface{} `gorm:"type:json"`
 }
