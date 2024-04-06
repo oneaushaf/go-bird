@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/oneaushaf/go-bird/helpers"
+	"github.com/oneaushaf/go-bird/services"
 	"net/http"
 )
 
@@ -15,7 +15,7 @@ func ReuqireAuth(c *gin.Context) {
 		return
 	}
 
-	claims, err := helpers.ValidateToken(tokenString)
+	claims, err := services.ValidateToken(tokenString)
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized,gin.H{

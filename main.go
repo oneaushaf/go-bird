@@ -25,7 +25,7 @@ func main() {
 	r.GET("/users/:user_id")
 	r.GET("/users/:user_id/predictions")
 
-	r.POST("/predictions")
+	r.POST("/predictions",controllers.Predict)
 	r.GET("/predictions")
 	
 	r.POST("/species")
