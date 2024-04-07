@@ -27,7 +27,9 @@ func Predict(c *gin.Context){
 		})
 		return
 	}
-	filePath := "../dataset/prediction/" + file.Filename
+
+	filePath := os.Getenv("PREDICTION_STORAGE") + file.Filename
+
 	if err := c.SaveUploadedFile(file,filePath); err != nil {
 		c.JSON(http.StatusInternalServerError,gin.H{
 			"message":"failed to upload image",
@@ -35,9 +37,6 @@ func Predict(c *gin.Context){
 		})
 		return
 	}
-
-	services.LoadEnv()
-	
 
 	result,err:= services.SendImageToAPI( os.Getenv("PREDICTION_SERVICE_URL")+"/predict",filePath,gin.H{
 		"model_version":"240403",

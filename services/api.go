@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+
 
 func SendImageToAPI(endpoint string, imagePath string, params gin.H) (gin.H, error) {
     file, err := os.Open(imagePath)
@@ -67,4 +70,35 @@ func SendImageToAPI(endpoint string, imagePath string, params gin.H) (gin.H, err
     }
 
     return response, nil
+}
+
+func SendRequestToAPI(endpoint string, params gin.H) (gin.H, error) {
+	// Encode parameters to JSON
+	jsonParams, err := json.Marshal(params)
+	if err != nil {
+		return nil, errors.New("A")
+	}
+
+	// Create a new HTTP request
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(jsonParams))
+	if err != nil {
+		return nil,errors.New("B")
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send the HTTP request
+	client := http.DefaultClient
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, errors.New("C")
+	}
+	defer res.Body.Close()
+
+	// Decode the response body into a map
+	var responseBody map[string]interface{}
+	if err := json.NewDecoder(res.Body).Decode(&responseBody); err != nil {
+		return nil, errors.New("D")
+	}
+
+	return responseBody, nil
 }

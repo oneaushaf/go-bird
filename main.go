@@ -21,14 +21,23 @@ func main() {
 	r.POST("/signup",controllers.Signup)
 	r.POST("/login",controllers.Login)
 
+	r.POST("/predictions",controllers.Predict)
+
+	r.POST("/models/train/new",controllers.TrainNewModel)
+	r.POST("/models/train/based/:model",controllers.TrainNewModel)
+	r.POST("/models/train/done",controllers.TrainingDone)
+	r.POST("/models/train/accept",controllers.AcceptModel)
+	r.GET("/models/:name")
+	// r.POST("/models",controllers.CreateModel)
+	// r.POST("/models/train/based",controllers.CreateBaseModel)
+
 	r.GET("/users")
 	r.GET("/users/:user_id")
 	r.GET("/users/:user_id/predictions")
 
-	r.POST("/predictions",controllers.Predict)
 	r.GET("/predictions")
 	
-	r.POST("/models",controllers.CreateModel)
+	
 	
 	r.POST("/species")
 	r.GET("/species")
