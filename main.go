@@ -28,6 +28,8 @@ func main() {
 	r.POST("/predictions",controllers.Predict)
 	r.GET("/predictions")
 	
+	r.POST("/models",controllers.CreateModel)
+	
 	r.POST("/species")
 	r.GET("/species")
 	r.POST("/species/:species_id/images")

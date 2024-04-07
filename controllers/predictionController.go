@@ -2,13 +2,17 @@ package controllers
 
 import (
 	"net/http"
-	"strings"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/oneaushaf/go-bird/services"
 )
 
 func Predict(c *gin.Context){
+	model := c.PostForm("model")
+	if model == "" {
+		model = "latest"
+	}
 	file,err := c.FormFile("image")
 	if err!= nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -17,7 +21,7 @@ func Predict(c *gin.Context){
 		})
 		return
 	}
-	if!strings.HasPrefix(file.Header.Get("Content-Type"),"image/"){
+	if services.IsImage(file){
 		c.JSON(http.StatusBadRequest,gin.H{
 			"message" : "invalid file type",
 		})
@@ -31,7 +35,11 @@ func Predict(c *gin.Context){
 		})
 		return
 	}
-	result,err:= services.SendImageToAPI("http://127.0.0.1:8000/predict",filePath,gin.H{
+
+	services.LoadEnv()
+	
+
+	result,err:= services.SendImageToAPI( os.Getenv("PREDICTION_SERVICE_URL")+"/predict",filePath,gin.H{
 		"model_version":"240403",
 	})
 	if err != nil {
