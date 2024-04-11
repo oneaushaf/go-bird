@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -25,4 +26,12 @@ type Request struct {
 	Message string `json:"message,omitempty"`
 	Error   string `json:"error,omitempty"`
 	Data    Data   `json:"data,omitempty"`
+}
+
+func ModelScheme(m []Model)(gin.H){
+	result := gin.H{}
+	for i:= range m{
+		result[m[i].Name] = m[i]
+	} 
+	return result
 }

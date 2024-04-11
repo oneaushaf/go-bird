@@ -59,13 +59,14 @@ func TrainNewModel(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "failed to train model",
-			"error":   err.Error(),
+			// "error":   err.Error(),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, result)
 }
+
 
 func TrainBasedModel(c *gin.Context) {
 	check, err := repositories.ExistsModel("name", "temp")
@@ -119,10 +120,6 @@ func TrainBasedModel(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-func GetModel(c *gin.Engine){
-	
-}
-
 func TrainingDone(c *gin.Context) {
 	data := models.Request{}
 
@@ -165,11 +162,25 @@ func AcceptModel(c *gin.Context) {
 
 	if _, err := os.Stat(tempDir); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "failed to create model",
+			"message": "there's no model to accept",
 			"error":   err.Error(),
 		})
 		return
 	}
+	if check,err:=repositories.ExistsModel("name","temp");err!=nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to check database",
+			"error":   err.Error(),
+		})
+		return
+	} else if check{
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "model is not listed in database",
+			"error":   err.Error(),
+		})
+		return
+	}
+	
 	today := time.Now().Format("060102")
 	newLatestDir := os.Getenv("MODEL_STORAGE") + "/" + today
 	if err := os.Rename(latestDir, newLatestDir); err != nil {
@@ -204,4 +215,73 @@ func AcceptModel(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "model accepted",
 	})
+}
+
+func DeclineModel(c *gin.Context){
+	tempDir := os.Getenv("MODEL_STORAGE") + "/temp"
+
+	if _, err := os.Stat(tempDir); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "there's no model to accept",
+			"error":   err.Error(),
+		})
+		return
+	}
+	if check,err:=repositories.ExistsModel("name","temp");err!=nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to check database",
+			"error":   err.Error(),
+		})
+		return
+	} else if check{
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "model is not listed in database",
+			"error":   err.Error(),
+		})
+		return
+	}
+	if err := repositories.DeleteModelByName("temp");err!=nil{
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"message": "failed to delete from database",
+			"error":   err.Error(),
+		})
+		return
+	}
+	if err := services.RemoveDir(tempDir);err!=nil{
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"message": "failed to delete model",
+			"error":   err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK,gin.H{})
+}
+
+func GetModels(c *gin.Context){
+	users,err := repositories.GetAllModels()
+	if err!=nil {
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"message":"fail to get models from repository",
+			"error":err.Error(),
+		})
+	}
+	result := models.ModelScheme(users)
+	c.JSON(http.StatusOK,result)
+}
+
+func GetModel(c *gin.Context){
+	name := c.Param("name")
+	if name==""{
+		c.JSON(http.StatusBadRequest,gin.H{
+			"message":"invalid request",
+		})
+	}
+	user,err := repositories.GetModelByName(name)
+	if err!=nil {
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"message":"fail to get models from repository",
+			"error":err.Error(),
+		})
+	}
+	c.JSON(http.StatusOK,user)
 }

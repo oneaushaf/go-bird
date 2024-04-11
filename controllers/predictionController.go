@@ -5,11 +5,13 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/oneaushaf/go-bird/models"
+	"github.com/oneaushaf/go-bird/repositories"
 	"github.com/oneaushaf/go-bird/services"
 )
 
 func Predict(c *gin.Context){
-	model := c.PostForm("model")
+	model := c.Param("model")
 	if model == "" {
 		model = "latest"
 	}
@@ -28,7 +30,7 @@ func Predict(c *gin.Context){
 		return
 	}
 
-	filePath := os.Getenv("PREDICTION_STORAGE") + file.Filename
+	filePath := os.Getenv("PREDICTION_STORAGE") +"/unclassified/"+ file.Filename
 
 	if err := c.SaveUploadedFile(file,filePath); err != nil {
 		c.JSON(http.StatusInternalServerError,gin.H{
@@ -39,8 +41,9 @@ func Predict(c *gin.Context){
 	}
 
 	result,err:= services.SendImageToAPI( os.Getenv("PREDICTION_SERVICE_URL")+"/predict",filePath,gin.H{
-		"model_version":"240403",
+		"version":model,
 	})
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError,gin.H{
 			"message":"failed to use prediction service",
@@ -48,5 +51,24 @@ func Predict(c *gin.Context){
 		})
 		return
 	}
+
+	classified, err := services.ClassifyImage(file.Filename,filePath,result)
+	if err!= nil {
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"message":"failed to classify",
+			"error":err.Error(),
+		})
+		return
+	}
+	if classified == nil {
+		result["result"] = "unable to classify"
+	}
+
+	repositories.CreatePrediction(&models.Predcition{
+		UserID     : 1,
+		Result     : result["result"].(string),
+		Confidence : result["confidence"].(map[string]interface{})[result["result"].(string)].(float64),
+		Image      : *classified,
+	})
 	c.JSON(http.StatusOK,result)
 }
