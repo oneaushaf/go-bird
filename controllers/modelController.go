@@ -14,7 +14,16 @@ import (
 	"gorm.io/datatypes"
 )
 
+var isTraining bool = false
+
 func TrainNewModel(c *gin.Context) {
+	if isTraining {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "a training is in progress, please wait untul the training is finished",
+		})
+		return
+	}
+
 	check, err := repositories.ExistsModel("name", "temp")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -64,11 +73,19 @@ func TrainNewModel(c *gin.Context) {
 		return
 	}
 
+	isTraining = true
+
 	c.JSON(http.StatusOK, result)
 }
 
 
 func TrainBasedModel(c *gin.Context) {
+	if isTraining {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "a training is in progress, please wait untul the training is finished",
+		})
+		return
+	}
 	check, err := repositories.ExistsModel("name", "temp")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -117,6 +134,8 @@ func TrainBasedModel(c *gin.Context) {
 		return
 	}
 
+	isTraining = true
+
 	c.JSON(http.StatusOK, result)
 }
 
@@ -154,6 +173,7 @@ func TrainingDone(c *gin.Context) {
 			return
 		}
 	}
+	isTraining = false
 }
 
 func AcceptModel(c *gin.Context) {
@@ -173,10 +193,9 @@ func AcceptModel(c *gin.Context) {
 			"error":   err.Error(),
 		})
 		return
-	} else if check{
+	} else if !check{
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "model is not listed in database",
-			"error":   err.Error(),
 		})
 		return
 	}

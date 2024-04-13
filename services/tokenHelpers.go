@@ -19,6 +19,7 @@ func GenerateTokens(user *models.User)(string,error){
 	expirationTime := time.Now().Add(24 * time.Hour)
 			claims := &Claims{
 				UserID: user.ID,
+				UserType: user.UserType,
 				StandardClaims: jwt.StandardClaims{
 					ExpiresAt: expirationTime.Unix(),
 				},
