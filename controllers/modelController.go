@@ -120,6 +120,20 @@ func TrainBasedModel(c *gin.Context) {
 		return
 	}
 
+	species,err := repositories.GetAllSpecies("unused_images>0")
+	if err!=nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to get species",
+			"error":   err.Error(),
+		})
+		return
+	} else if species == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "no new images to train with",
+			"error":   err.Error(),
+		})
+	}
+
 	result, err := services.SendRequestToAPI(os.Getenv("PREDICTION_SERVICE_URL")+"/train/new", gin.H{
 		"patience":   body.Patience,
 		"base_model": BaseModel,
@@ -135,6 +149,18 @@ func TrainBasedModel(c *gin.Context) {
 	}
 
 	isTraining = true
+
+	for _,v := range species {
+		v.UnusedImages = 0
+		err = repositories.DB.Save(&v).Error
+	}
+	if err!=nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to update species",
+			"error":   err.Error(),
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, result)
 }

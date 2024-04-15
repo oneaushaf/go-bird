@@ -11,7 +11,7 @@ import (
 	"github.com/oneaushaf/go-bird/services"
 )
 
-func init(){
+func init() {
 	services.LoadEnv()
 	repositories.ConnectDatabase()
 	repositories.SyncDatabase()
@@ -20,32 +20,32 @@ func init(){
 func main() {
 	r := gin.Default()
 
-	r.POST("/signup",controllers.Signup) //signup
-	r.POST("/login",controllers.Login) //login
+	r.POST("/signup", controllers.Signup)                  //signup
+	r.POST("/login", controllers.Login)                    //login
+	r.POST("/models/train/done", controllers.TrainingDone) //(**is not used by client**) to notify train in finished
+	r.POST("/seed", seeders.Run)                           //will be deleted if i found a new way to seed db
 
-	r.POST("/predictions",middleware.ReuqireAuth,controllers.Predict) //make prediction with latest model
-	r.POST("/predictions/:model",middleware.ReuqireAuth,controllers.Predict) //make prediction with specified model
-	r.GET("/predictions") //get all the prediction data
+	userRoute := r.Group("/", middleware.ReuqireAuth)
+	userRoute.POST("/predictions", controllers.Predict)                                                   //make prediction with latest model
+	userRoute.GET("/species", controllers.GetSpecies)                                                     //get the list of all species saved
+	userRoute.GET("/species/:species_id/images", controllers.GetSpeciesImages)                            //get list of images from the specified species dataset
+	userRoute.GET("/species/:species_id/images/*file", controllers.GetSpeciesImage)                       //get the image
+	userRoute.GET("/users/:user_id", middleware.ReuqireSign, controllers.GetUser)                         //get a user's data
+	userRoute.GET("/users/:user_id/predictions", middleware.ReuqireSign, controllers.GetPredictionByUser) //get all the prediction made by a user //get list of images from the specified species dataset
 
-	r.GET("/users") //get all the users data
-	r.GET("/users/:user_id") //get a user's data 
-	r.GET("/users/:user_id/predictions") //get all the prediction made by a user
-
-	r.POST("/models/train/new",middleware.ReuqireAuth,middleware.ReuqireAdmin,controllers.TrainNewModel) //make a new model with no base model
-	r.POST("/models/train/based/:model",middleware.ReuqireAuth,middleware.ReuqireAdmin,controllers.TrainBasedModel) //make a new model with base model
-	r.POST("/models/train/done",controllers.TrainingDone) //(**is not used by client**) to notify train in finished
-	r.POST("/models/train/accept",middleware.ReuqireAuth,middleware.ReuqireAdmin,controllers.AcceptModel) //accept the model that has just been trained
-	r.POST("/models/train/decline",middleware.ReuqireAuth,middleware.ReuqireAdmin,controllers.DeclineModel) //decline the model that has just been trained
-	r.GET("/models/:name",middleware.ReuqireAuth,middleware.ReuqireAdmin,controllers.GetModel) //get the model data (name, date, report, etc)
-	r.GET("/models",middleware.ReuqireAuth,middleware.ReuqireAdmin,controllers.GetModels) //get the list of all the models saved 
-
-	r.POST("/species",middleware.ReuqireAuth,controllers.CreateSpecies) //add a new species to be listed on the system
-	r.GET("/species",middleware.ReuqireAuth,controllers.GetSpecies) //get the list of all species saved 
-	r.POST("/species/:species_id/images",middleware.ReuqireAuth,controllers.AddImagetoSpecies) //add images to the specified species dataset
-	r.GET("/species/:species_id/images") //get images from the specified species dataset
-
-	r.POST("/seed",seeders.Run)
+	adminRoute := r.Group("/", middleware.ReuqireAuth, middleware.ReuqireAuth)
+	adminRoute.POST("/predictions/:model", controllers.Predict)                   //make prediction with specified model
+	adminRoute.POST("/models/train/new", controllers.TrainNewModel)               //make a new model with no base model
+	adminRoute.POST("/models/train/based/:model", controllers.TrainBasedModel)    //make a new model with base model
+	adminRoute.POST("/models/train/accept", controllers.AcceptModel)              //accept the model that has just been trained
+	adminRoute.POST("/models/train/decline", controllers.DeclineModel)            //decline the model that has just been trained
+	adminRoute.GET("/models/:name", controllers.GetModel)                         //get the model data (name, date, report, etc)
+	adminRoute.GET("/models", controllers.GetModels)                              //get the list of all the models saved
+	adminRoute.POST("/species", controllers.CreateSpecies)                        //add a new species to be listed on the system
+	adminRoute.POST("/species/:species_id/images", controllers.AddImagetoSpecies) //add images to the specified species dataset
+	adminRoute.GET("/users")                                                      //get all the users data
+	adminRoute.GET("/predictions")                                                //get all the prediction data
 
 	port := os.Getenv("PORT")
-	r.Run(":"+port)
+	r.Run(":" + port)
 }

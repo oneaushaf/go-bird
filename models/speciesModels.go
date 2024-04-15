@@ -8,4 +8,5 @@ type Species struct {
 	gorm.Model
 	Name   string
 	Images uint
+	UnusedImages uint
 }

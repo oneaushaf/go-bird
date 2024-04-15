@@ -112,3 +112,55 @@ func AddImagetoSpecies(c *gin.Context){
 	repositories.DB.Save(species)
 	c.JSON(http.StatusOK, gin.H{"message": "images uploaded successfully"})
 }
+
+func GetSpeciesImages(c *gin.Context){
+	id := c.Param("species_id")
+	species,err := repositories.GetSpeciesById(id)
+	if err!=nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "no species found in database",
+			"error":err.Error(),
+		})
+		return
+	}
+	dir :=fmt.Sprintf("%s/train/%03d-%s",os.Getenv("DATASET_STORAGE"),species.ID,species.Name)
+
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "cannot read files in folder",
+			"error":err.Error(),
+		})
+		return
+	}
+
+	var list []string
+	for _,f :=range files {
+		a := fmt.Sprintf("/species/%s/images/%s",id,f.Name())
+		list = append(list,a)
+	}
+
+	c.JSON(http.StatusOK, list)
+}
+
+func GetSpeciesImage(c *gin.Context){
+	id := c.Param("species_id")
+	img := c.Param("file")
+	species,err := repositories.GetSpeciesById(id)
+	if err!=nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "no species found in database",
+			"error":err.Error(),
+		})
+		return
+	}
+	dir :=fmt.Sprintf("%s/train/%03d-%s/%s",os.Getenv("DATASET_STORAGE"),species.ID,species.Name,img)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "image not found",
+			"error":err.Error(),
+		})
+		return
+	}
+	c.File(dir)
+}
