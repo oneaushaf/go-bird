@@ -106,3 +106,14 @@ func GetPredictionByUser(c *gin.Context){
 	}
 	c.JSON(http.StatusOK,user.Predictions)
 }
+
+func GetPredictions(c *gin.Context){
+	predictions,err := repositories.GetPredictions()
+	if err!=nil{
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"message":"fail to get predictions from repository",
+			"error":err.Error(),
+		})
+	}
+	c.JSON(http.StatusOK,predictions)
+}

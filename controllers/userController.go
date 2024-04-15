@@ -113,3 +113,14 @@ func GetUser(c *gin.Context){
 	}
 	c.JSON(http.StatusOK,user)
 }
+
+func GetUsers(c *gin.Context){
+	users,err := repositories.GetUsers()
+	if err!=nil{
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"message":"fail to get users from repository",
+			"error":err.Error(),
+		})
+	}
+	c.JSON(http.StatusOK,users)
+}
