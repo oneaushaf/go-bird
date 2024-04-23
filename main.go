@@ -42,9 +42,13 @@ func main() {
 	adminRoute.GET("/models/:name", controllers.GetModel)                         //get the model data (name, date, report, etc)
 	adminRoute.GET("/models", controllers.GetModels)                              //get the list of all the models saved
 	adminRoute.POST("/species", controllers.CreateSpecies)                        //add a new species to be listed on the system
-	adminRoute.POST("/species/:species_id/images", controllers.AddImagetoSpecies) //add images to the specified species dataset
+	adminRoute.POST("/species/:species_id/datasets", controllers.AddImagetoSpecies) //add images to the specified species dataset
 	adminRoute.GET("/users", controllers.GetUsers)                                //get all the users data
 	adminRoute.GET("/predictions",controllers.GetPredictions)                                                //get all the prediction data
+	
+	adminRoute.GET("/species/:species_id/datasets", controllers.AddImagetoSpecies) //add images to the specified species dataset
+	adminRoute.GET("/datasets/:dataset_id", controllers.AddImagetoSpecies) //add images to the specified species dataset
+	adminRoute.DELETE("/datasets/:dataset_id", controllers.AddImagetoSpecies) //add images to the specified species dataset
 
 	port := os.Getenv("PORT")
 	r.Run(":" + port)

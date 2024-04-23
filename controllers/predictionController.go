@@ -12,23 +12,31 @@ import (
 
 func Predict(c *gin.Context) {
 	model := c.Param("model")
+	var m *models.Model
+	var err error
 	if model == "" {
-		model = "latest"
-	}
-
-	m := models.Model{}
-	d := repositories.DB.First(&m, "name=?", model)
-	if d.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "failed to get model",
-			"error":   d.Error.Error(),
-		})
-		return
-	} else if d.RowsAffected == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "no model with the specified name found",
-		})
-		return
+		m,err = repositories.GetUsedModel()
+		if err != nil{
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "failed to get model",
+				"error":   err.Error(),
+			})
+			return
+		}
+	}else {
+		d := repositories.DB.First(&m, "name=?", model)
+		if d.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "failed to get model",
+				"error":   d.Error.Error(),
+			})
+			return
+		} else if d.RowsAffected == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "no model with the specified name found",
+			})
+			return
+		}
 	}
 
 	file, err := c.FormFile("image")
@@ -57,7 +65,7 @@ func Predict(c *gin.Context) {
 	}
 
 	result, err := services.SendImageToAPI(os.Getenv("PREDICTION_SERVICE_URL")+"/predict", filePath, gin.H{
-		"version": model,
+		"version": m.Name,
 	})
 
 	if err != nil {

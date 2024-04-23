@@ -8,8 +8,7 @@ var model []models.Model
 
 func initModel(){
 	model = []models.Model{
-		{Name : "base",},
-		{Name : "240331",},
-		{Name : "latest",},
+		{Name : "240331-0001",IsUsed: false},
+		{Name : "240420-0001",IsUsed: true},
 	}
 }

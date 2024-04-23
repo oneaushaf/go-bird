@@ -7,4 +7,5 @@ func SyncDatabase(){
 	DB.AutoMigrate(&models.Model{})
 	DB.AutoMigrate(&models.Predcition{})
 	DB.AutoMigrate(&models.Species{})
+	DB.AutoMigrate(&models.Dataset{})
 }

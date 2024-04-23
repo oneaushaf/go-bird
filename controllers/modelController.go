@@ -120,7 +120,7 @@ func TrainBasedModel(c *gin.Context) {
 		return
 	}
 
-	species,err := repositories.GetAllSpecies("unused_images>0")
+	species,err := repositories.GetAllSpecies("untrained>0")
 	if err!=nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "failed to get species",
@@ -130,11 +130,11 @@ func TrainBasedModel(c *gin.Context) {
 	} else if species == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "no new images to train with",
-			"error":   err.Error(),
 		})
+		return
 	}
 
-	result, err := services.SendRequestToAPI(os.Getenv("PREDICTION_SERVICE_URL")+"/train/new", gin.H{
+	result, err := services.SendRequestToAPI(os.Getenv("PREDICTION_SERVICE_URL")+"/train/based", gin.H{
 		"patience":   body.Patience,
 		"base_model": BaseModel,
 		"epochs":     body.Epochs,
@@ -149,18 +149,6 @@ func TrainBasedModel(c *gin.Context) {
 	}
 
 	isTraining = true
-
-	for _,v := range species {
-		v.UnusedImages = 0
-		err = repositories.DB.Save(&v).Error
-	}
-	if err!=nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "failed to update species",
-			"error":   err.Error(),
-		})
-		return
-	}
 
 	c.JSON(http.StatusOK, result)
 }
@@ -186,9 +174,18 @@ func TrainingDone(c *gin.Context) {
 			})
 			return
 		}
+		testData, err := json.Marshal(data.Test)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "failed to marshal request body",
+				"error":   err.Error(),
+			})
+			return
+		}
 		model := models.Model{
 			Name:   "temp",
 			Report: datatypes.JSON(reportData),
+			TestResult: datatypes.JSON(testData),
 		}
 		err = repositories.CreateModel(&model)
 		if err != nil {
@@ -204,11 +201,104 @@ func TrainingDone(c *gin.Context) {
 
 func AcceptModel(c *gin.Context) {
 	tempDir := os.Getenv("MODEL_STORAGE") + "/temp"
-	latestDir := os.Getenv("MODEL_STORAGE") + "/latest"
 
 	if _, err := os.Stat(tempDir); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "there's no model to accept",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	model,err := repositories.GetModelByName("temp")
+	if err!= nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "there's no model to accept",
+			"error":   err.Error(),
+		})
+		return
+	}
+	latestModel,err := repositories.GetUsedModel()
+	if err!= nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "there's no model used",
+			"error":   err.Error(),
+		})
+		return
+	}
+	
+	today := time.Now().Format("060102")
+	minute := time.Now().Hour()*60 + time.Now().Minute()
+	dir := fmt.Sprintf("%s-%04d",today,minute)
+
+	newLatestDir := os.Getenv("MODEL_STORAGE") + "/" + dir
+	if err := os.Rename(tempDir, newLatestDir); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to rename latest",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	model.Name = dir
+	model.IsUsed = true
+
+	latestModel.IsUsed = false
+
+	if err:= repositories.DB.Save(latestModel).Error;err!=nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to save used in db",
+			"error":   err.Error(),
+		})
+		return
+	}
+	if err:= repositories.DB.Save(model).Error;err!=nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to save temp in db",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+
+	if err := repositories.UpdateModelName("temp", dir); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to rename temp in db",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	species,err := repositories.GetAllSpecies("untrained>0")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "no untrained data",
+				"error":   err.Error(),
+			})
+			return
+		}
+		for _,v := range species{
+			v.Untrained = 0
+			if err := repositories.DB.Save(&v).Error;err!=nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": "failed to save species",
+					"error":   err.Error(),
+				})
+				return
+			}
+		}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "model accepted",
+	})
+}
+
+func DeclineModel(c *gin.Context){
+	tempDir := os.Getenv("MODEL_STORAGE") + "/temp"
+
+	if _, err := os.Stat(tempDir); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "there's no model to declined",
 			"error":   err.Error(),
 		})
 		return
@@ -222,66 +312,6 @@ func AcceptModel(c *gin.Context) {
 	} else if !check{
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "model is not listed in database",
-		})
-		return
-	}
-	
-	today := time.Now().Format("060102")
-	newLatestDir := os.Getenv("MODEL_STORAGE") + "/" + today
-	if err := os.Rename(latestDir, newLatestDir); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "failed to rename latest",
-			"error":   err.Error(),
-		})
-		return
-	}
-	newTempDir := os.Getenv("MODEL_STORAGE") + "/latest"
-	if err := os.Rename(tempDir, newTempDir); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "failed to rename temp",
-			"error":   err.Error(),
-		})
-		return
-	}
-	if err := repositories.UpdateModelName("latest", today); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "failed to rename temp in db",
-			"error":   err.Error(),
-		})
-		return
-	}
-	if err := repositories.UpdateModelName("temp", "latest"); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "failed to rename temp in db",
-			"error":   err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"message": "model accepted",
-	})
-}
-
-func DeclineModel(c *gin.Context){
-	tempDir := os.Getenv("MODEL_STORAGE") + "/temp"
-
-	if _, err := os.Stat(tempDir); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "there's no model to accept",
-			"error":   err.Error(),
-		})
-		return
-	}
-	if check,err:=repositories.ExistsModel("name","temp");err!=nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "failed to check database",
-			"error":   err.Error(),
-		})
-		return
-	} else if check{
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "model is not listed in database",
-			"error":   err.Error(),
 		})
 		return
 	}

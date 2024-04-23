@@ -39,8 +39,16 @@ func GetModelByName(name string) (*models.Model, error) {
     return &model, nil
 }
 
+func GetUsedModel()(*models.Model, error){
+    var model models.Model
+    if err := DB.First(&model,"is_used=1").Error; err != nil {
+        return nil, err
+    }
+    return &model, nil
+}
+
 func DeleteModelByName(name string)error {
-    if err := DB.Where("name = ?", name).Delete(&models.Model{}).Error; err != nil {
+    if err := DB.Unscoped().Where("name = ?", name).Delete(&models.Model{}).Error; err != nil {
         return err
     }
     return nil

@@ -8,8 +8,11 @@ import (
 
 type Model struct {
 	gorm.Model
-	Name   string         `gorm:"not null,index"`
-	Report datatypes.JSON `gorm:"type:json"`
+	Name        string `gorm:"not null,index"`
+	Description string
+	Report      datatypes.JSON `gorm:"type:json"`
+	TestResult  datatypes.JSON `gorm:"type:json"`
+	IsUsed      bool           `gorm:"type:bool"`
 }
 
 type Data struct {
@@ -21,17 +24,27 @@ type Data struct {
 	Epochs          int     `json:"epochs,omitempty"`
 }
 
-type Request struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
-	Error   string `json:"error,omitempty"`
-	Data    Data   `json:"data,omitempty"`
+type TestResult struct {
+	Precision float64 `json:"precision"`
+	Recall    float64 `json:"recall"`
+	Class     map[string]struct {
+		Precision float64 `json:"precision"`
+		Recall    float64 `json:"recall"`
+	} `json:"class"`
 }
 
-func ModelScheme(m []Model)(gin.H){
+type Request struct {
+	Success bool       `json:"success"`
+	Message string     `json:"message,omitempty"`
+	Error   string     `json:"error,omitempty"`
+	Data    Data       `json:"data,omitempty"`
+	Test    TestResult `json:"test"`
+}
+
+func ModelScheme(m []Model) gin.H {
 	result := gin.H{}
-	for i:= range m{
+	for i := range m {
 		result[m[i].Name] = m[i]
-	} 
+	}
 	return result
 }

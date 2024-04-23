@@ -8,16 +8,16 @@ var species []models.Species
 
 func initSpecies(){
 	species = []models.Species{
-		{Name : "Bangau leher-hitam",Images: 32,UnusedImages: 0},
-		{Name : "Curik Bali",Images: 32,UnusedImages: 0},
-		{Name : "Ekek Geling",Images: 32,UnusedImages: 0},
-		{Name : "Gelatik Jawa",Images: 32,UnusedImages: 0},
-		{Name : "Kakatua Raja",Images: 32,UnusedImages: 0},
-		{Name : "Luntur harimau",Images: 32,UnusedImages: 0},
-		{Name : "Merak Hijau",Images: 32,UnusedImages: 0},
-		{Name : "Paok Bidadari",Images: 32,UnusedImages: 0},
-		{Name : "Raja udang kalung-biru jawa",Images: 32,UnusedImages: 0},
-		{Name : "Sikatan besar",Images: 32,UnusedImages: 0},
-		{Name : "Baza hitam",Images: 32,UnusedImages: 0},
+		{Name : "Bangau leher-hitam",Training: 32,Untrained: 0,Testing: 4,Validation: 4},
+		{Name : "Curik Bali",Training: 32,Untrained: 0,Testing: 4,Validation: 4},
+		{Name : "Ekek Geling",Training: 32,Untrained: 0,Testing: 4,Validation: 4},
+		{Name : "Gelatik Jawa",Training: 32,Untrained: 0,Testing: 4,Validation: 4},
+		{Name : "Kakatua Raja",Training: 32,Untrained: 0,Testing: 4,Validation: 4},
+		{Name : "Luntur harimau",Training: 32,Untrained: 0,Testing: 4,Validation: 4},
+		{Name : "Merak Hijau",Training: 32,Untrained: 0,Testing: 4,Validation: 4},
+		{Name : "Paok Bidadari",Training: 32,Untrained: 0,Testing: 4,Validation: 4},
+		{Name : "Raja udang kalung-biru jawa",Training: 32,Untrained: 0,Testing: 4,Validation: 4},
+		{Name : "Sikatan besar",Training: 32,Untrained: 0,Testing: 4,Validation: 4},
+		{Name : "Baza hitam",Training: 32,Untrained: 0,Testing: 4,Validation: 4},
 	}
 }
