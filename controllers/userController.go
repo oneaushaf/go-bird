@@ -21,7 +21,7 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	check, err := services.CheckExistence(user.Email, user.Username)
+	check, err := services.CheckExistence(user.Email, user.Username, user.Phone)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "internal server error",
@@ -30,8 +30,9 @@ func Signup(c *gin.Context) {
 		return
 	} else if check {
 		c.JSON(http.StatusConflict, gin.H{
-			"message": "username or email already used",
+			"message": "username or email or phone number already used",
 		})
+		return
 	}
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 10)

@@ -5,10 +5,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/oneaushaf/go-bird/models"
 	"github.com/oneaushaf/go-bird/repositories"
+	"github.com/oneaushaf/go-bird/services"
 )
 
 func AddImagetoSpecies(c *gin.Context) {
@@ -83,6 +86,92 @@ func AddImagetoSpecies(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "images uploaded successfully"})
 }
 
-func DeleteUntrainedDataset(c *gin.Context){
+func GetDatasets(c *gin.Context){
+	id := c.Param("species_id")
+	species := models.Species{}
+	tx := repositories.DB.Preload("Datasets").First(&species,"id=?",id)
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"message":"repository error",
+			"error":tx.Error.Error(),
+		})
+	}
+	c.JSON(http.StatusOK,species.Datasets)
+}
+
+func GetDataset(c *gin.Context){
+	id := c.Param("dataset_id")
+	dataset := models.Dataset{}
+	tx := repositories.DB.First(&dataset,"id=?",id)
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"message":"repository error",
+			"error":tx.Error.Error(),
+		})
+		return
+	}
+	species,err := repositories.GetSpeciesById(strconv.Itoa(int(dataset.SpeciesID)))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"message":"repository error",
+			"error":err,
+		})
+		return
+	}
+	parts := strings.Split(dataset.Startindex, ",")
+	var starts []int
+	for _, part := range parts {
+		num, err := strconv.Atoi(part)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError,gin.H{
+				"message":"repository error",
+				"error":tx.Error.Error(),
+			})
+			return
+		}
+		starts = append(starts, num)
+	}
+	sideCount := (dataset.Images+9)/10
+	trainCount := dataset.Images - 2*sideCount
+
+	ends := []int {
+		starts[0]+int(trainCount)-1,
+		starts[1]+int(sideCount)-1,
+		starts[2]+int(sideCount)-1,
+	}
+
+	folder := fmt.Sprintf("%03d-%s",species.ID,species.Name)
+
+	var res []string
+
+	train,err1 := services.GetImagesInRange("train",folder,starts[0],ends[0])
+	val,err2 := services.GetImagesInRange("validation",folder,starts[1],ends[1])
+	test,err3:=services.GetImagesInRange("test",folder,starts[2],ends[2])
+
+	if (err1!=nil || err2!=nil || err3!=nil){
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"message":"failed to get image",
+			"error":err1.Error()+err2.Error()+err3.Error(),
+		})
+		return
+	}
+
+
+
+	res = append(res,train...)
+	res = append(res,val...)
+	res = append(res,test...)
+
+	for i,v := range res {
+		res[i] = fmt.Sprintf("/species/%d/images/%s",species.ID,v)
+	}
+	
+	c.JSON(http.StatusOK,gin.H{
+		"images" : res,
+		"dataset" : dataset,
+	})
+}
+
+func DeleteDataset(c *gin.Context){
 	
 }

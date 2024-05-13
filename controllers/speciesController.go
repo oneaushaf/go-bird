@@ -107,7 +107,7 @@ func GetSpeciesImages(c *gin.Context) {
 
 	var list []string
 	for _, f := range files {
-		a := fmt.Sprintf("/species/%s/images/%s", id, f.Name())
+		a := fmt.Sprintf("/species/%s/images/train/%s", id, f.Name())
 		list = append(list, a)
 	}
 
@@ -116,6 +116,7 @@ func GetSpeciesImages(c *gin.Context) {
 
 func GetSpeciesImage(c *gin.Context) {
 	id := c.Param("species_id")
+	datatype := c.Param("type")
 	img := c.Param("file")
 	species, err := repositories.GetSpeciesById(id)
 	if err != nil {
@@ -125,7 +126,7 @@ func GetSpeciesImage(c *gin.Context) {
 		})
 		return
 	}
-	dir := fmt.Sprintf("%s/train/%03d-%s/%s", os.Getenv("DATASET_STORAGE"), species.ID, species.Name, img)
+	dir := fmt.Sprintf("%s/%s/%03d-%s/%s", os.Getenv("DATASET_STORAGE"),datatype, species.ID, species.Name, img)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "image not found",

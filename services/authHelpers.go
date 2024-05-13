@@ -27,7 +27,7 @@ func CheckCredentials(identifier string, password string) (*models.User,error){
 	return user,nil
 }
 
-func CheckExistence(email string, username string) (bool, error){
+func CheckExistence(email string, username string, phone string) (bool, error){
 	existingUser, err := repositories.GetUserByIdentifier(username)
 	if existingUser != nil {
 		return true,nil
@@ -36,6 +36,12 @@ func CheckExistence(email string, username string) (bool, error){
 	}
 
 	existingUser, err = repositories.GetUserByIdentifier(email)
+	if existingUser != nil {
+		return true,nil
+	} else if !errors.Is(err,gorm.ErrRecordNotFound) {
+		return false,err
+	} 
+	existingUser, err = repositories.GetUserByIdentifier(phone)
 	if existingUser != nil {
 		return true,nil
 	} else if !errors.Is(err,gorm.ErrRecordNotFound) {
