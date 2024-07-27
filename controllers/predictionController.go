@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/oneaushaf/go-bird/models"
@@ -98,8 +99,11 @@ func Predict(c *gin.Context) {
 		})
 		return
 	}
+	
+	name, _ := services.RandStr(16)
+	ext := filepath.Ext(file.Filename)
 
-	filePath := os.Getenv("PREDICTION_STORAGE") + "/unclassified/" + file.Filename
+	filePath := os.Getenv("PREDICTION_STORAGE") + "/unclassified/" + name+ext
 
 	if err := c.SaveUploadedFile(file, filePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

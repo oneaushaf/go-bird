@@ -145,6 +145,9 @@ func GetSpeciesImagesUrlBytype(c *gin.Context) {
 	id := c.Param("species_id")
 	imgtype := c.Param("type")
 	meta := c.Query("meta")
+	untrained := c.Query("untrained")
+
+
 
 	var img any
 	if imgtype == "training" {
@@ -158,11 +161,17 @@ func GetSpeciesImagesUrlBytype(c *gin.Context) {
 		return
 	}
 
-	if meta == "" {
-		repositories.DB.Find(img, "species_id=?", id)
-	} else {
-		repositories.DB.Find(img, "species_id=? AND meta=?", id, meta)
+	if imgtype == "training" && untrained == "true"{
+		repositories.DB.Find(img, "species_id=? AND is_trained=?" , id,true)
+	}else{
+		if meta == "" {
+			repositories.DB.Find(img, "species_id=?", id)
+		} else {
+			repositories.DB.Find(img, "species_id=? AND meta=?", id, meta)
+		}
 	}
+	
+	
 
 	var result []string
 	switch v := img.(type) {
@@ -220,6 +229,71 @@ func GetSpeciesImage(c *gin.Context) {
 		return
 	}
 	// return
+}
+
+func DeleteSpeciesImage(c *gin.Context) {
+	
+	id := c.Param("species_id")
+	datatype := c.Param("type")
+	img := c.Param("name")
+	species, err := repositories.GetSpeciesById(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "no species found in database",
+			"error":   err.Error(),
+		})
+		return
+	}
+	
+	var result interface{}
+
+	switch datatype {
+	case "training":
+		var model models.TrainingImage
+		err = repositories.DB.First(&model, "file_name = ?", img).Error
+		result = &model
+	case "validation":
+		var model models.ValidationImage
+		err = repositories.DB.First(&model, "file_name = ?", img).Error
+		result = &model
+	case "testing":
+		var model models.TestingImage
+		err = repositories.DB.First(&model, "file_name = ?", img).Error
+		result = &model
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid datatype",
+		})
+		return
+	}
+
+	if err!=nil{
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "cant find image filename",
+			"error": err.Error(),
+		})
+		return
+	}
+
+	dir := fmt.Sprintf("%s/%s/%03d-%s/%s", os.Getenv("DATASET_STORAGE"), datatype, species.ID, species.Name, img)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "image not found",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	err = os.Remove(dir)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := repositories.DB.Delete(result).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 }
 
 func DeleteUntrainedImage(c *gin.Context) {

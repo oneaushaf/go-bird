@@ -168,7 +168,7 @@ func AddImage(c *gin.Context) {
             dst = fmt.Sprintf("%s/validation/%03d-%s/%s%s", os.Getenv("DATASET_STORAGE"), species.ID, species.Name, name, ext)
             img = &models.ValidationImage{
                 SpeciesID: uint(id_int),
-                FileName:  name + ext,
+                FileName:  name + ext ,
                 Meta:      meta,
             }
         } else if i < 2*v_count {

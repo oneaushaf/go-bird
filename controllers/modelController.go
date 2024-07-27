@@ -297,7 +297,7 @@ func AcceptModel(c *gin.Context) {
 		v.Untrained = 0
 		if err := repositories.DB.Save(&v).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": "failed to save species",
+				"message": "failed to save model",
 				"error":   err.Error(),
 			})
 			return
@@ -307,7 +307,16 @@ func AcceptModel(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "model accepted",
 	})
+	result := repositories.DB.Model(&models.TrainingImage{}).Where("is_trained = ?", false).Update("is_trained", true)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to save model",
+			"error":   result.Error.Error(),
+		})
+		return
+	}
 }
+
 
 func DeclineModel(c *gin.Context) {
 	tempDir := os.Getenv("MODEL_STORAGE") + "/temp"

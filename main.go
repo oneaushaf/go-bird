@@ -29,7 +29,7 @@ func main() {
 
 	userRoute := r.Group("/", middleware.ReuqireAuth)
 	// userRoute.POST("/predictions", controllers.Predict)                                                        //make prediction with latest model
-	userRoute.POST("/predictions-v2", controllers.PredictV2)                                                   //make prediction with latest model
+	// userRoute.POST("/predictions-v2", controllers.PredictV2)                                                   //make prediction with latest model
 	userRoute.POST("/predictions", controllers.Predict)                                                        //make prediction with latest model
 	userRoute.GET("/species", controllers.GetAllSpecies)                                                       //get the list of all species saved
 	userRoute.GET("/species/:species_id", controllers.GetSpecies)                                              //get the list of all species saved
@@ -42,11 +42,12 @@ func main() {
 	userRoute.GET("/users/:user_id/predictions", middleware.ReuqireSign, controllers.GetPredictionByUser)      //get all the prediction made by a user //get list of images from the specified species dataset
 	userRoute.GET("/predictions/:prediction_id", middleware.ReuqireAuth, controllers.GetPrediction)            //get all the prediction made by a user //get list of images from the specified species dataset
 	userRoute.GET("/predictions/:prediction_id/image", middleware.ReuqireAuth, controllers.GetPredictionImage) //get all the prediction made by a user //get list of images from the specified species dataset
-
+	
 	adminRoute := r.Group("/", middleware.ReuqireAuth, middleware.ReuqireAuth)
 	adminRoute.POST("/species", controllers.CreateSpecies)                              //add a new species to be listed on the system
 	adminRoute.POST("/species/:species_id/images", controllers.AddImage)                //add images to the specified species dataset
 	adminRoute.POST("/species/:species_id/images/:type", controllers.AddSpecifiedImage) //add images to the specified species dataset
+	adminRoute.DELETE("/species/:species_id/images/:type/:name", controllers.DeleteSpeciesImage)                      //get the image
 	// adminRoute.POST("/predictions/:model", controllers.Predict)                         //make prediction with specified model
 	adminRoute.GET("/models", controllers.GetModels)                    //get the list of all the models saved
 	adminRoute.GET("/models/:name", controllers.GetModel)               //get the model data (name, date, report, etc)
@@ -55,7 +56,6 @@ func main() {
 	adminRoute.GET("/models/train/check", controllers.CheckTraining)    //make a new model with no base model
 	adminRoute.POST("/models/train/accept", controllers.AcceptModel)    //accept the model that has just been trained
 	adminRoute.POST("/models/train/decline", controllers.DeclineModel)  //decline the model that has just been trained
-
 	adminRoute.GET("/users", controllers.GetUsers)             //get all the users data
 	adminRoute.GET("/predictions", controllers.GetPredictions) //get all the prediction data
 	// adminRoute.DELETE("/datasets/:dataset_id", controllers.DeleteDataset) //add images to the specified species dataset
