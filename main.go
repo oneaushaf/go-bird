@@ -48,13 +48,13 @@ func main() {
 	adminRoute.POST("/species/:species_id/images", controllers.AddImage)                //add images to the specified species dataset
 	adminRoute.POST("/species/:species_id/images/:type", controllers.AddSpecifiedImage) //add images to the specified species dataset
 	// adminRoute.POST("/predictions/:model", controllers.Predict)                         //make prediction with specified model
-	adminRoute.GET("/models", controllers.GetModels)                                    //get the list of all the models saved
-	adminRoute.GET("/models/:name", controllers.GetModel)                               //get the model data (name, date, report, etc)
-	adminRoute.POST("/models/train/new", controllers.TrainNewModel)                     //make a new model with no base model
-	adminRoute.POST("/models/train/based", controllers.TrainBasedModel)                 //make a new model with base model
-	adminRoute.GET("/models/train/check", controllers.CheckTraining)                   //make a new model with no base model
-	adminRoute.POST("/models/train/accept", controllers.AcceptModel)                    //accept the model that has just been trained
-	adminRoute.POST("/models/train/decline", controllers.DeclineModel)                  //decline the model that has just been trained
+	adminRoute.GET("/models", controllers.GetModels)                    //get the list of all the models saved
+	adminRoute.GET("/models/:name", controllers.GetModel)               //get the model data (name, date, report, etc)
+	adminRoute.POST("/models/train/new", controllers.TrainNewModel)     //make a new model with no base model
+	adminRoute.POST("/models/train/based", controllers.TrainBasedModel) //make a new model with base model
+	adminRoute.GET("/models/train/check", controllers.CheckTraining)    //make a new model with no base model
+	adminRoute.POST("/models/train/accept", controllers.AcceptModel)    //accept the model that has just been trained
+	adminRoute.POST("/models/train/decline", controllers.DeclineModel)  //decline the model that has just been trained
 
 	adminRoute.GET("/users", controllers.GetUsers)             //get all the users data
 	adminRoute.GET("/predictions", controllers.GetPredictions) //get all the prediction data
