@@ -1,10 +1,10 @@
 package repositories
 
-import (
+// import (
 
-	"github.com/oneaushaf/go-bird/models"
-)
+// 	"github.com/oneaushaf/go-bird/models"
+// )
 
-func CreateDataset(model *models.Dataset) error {
-	return DB.Create(model).Error
-}
+// func CreateDataset(model *models.Dataset) error {
+// 	return DB.Create(model).Error
+// }

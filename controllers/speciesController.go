@@ -12,7 +12,10 @@ import (
 
 func CreateSpecies(c *gin.Context) {
 	var body struct {
-		Name string `bind:"required"`
+		Name           string `bind:"required"`
+		Description    string `bind:"required"`
+		Category       string `bind:"required"`
+		ScientificName string `bind:"required"`
 	}
 
 	if err := c.Bind(&body); err != nil {
@@ -24,11 +27,10 @@ func CreateSpecies(c *gin.Context) {
 	}
 
 	species := models.Species{
-		Name:   body.Name,
-		Training: 0,
-		Untrained: 0,
-		Testing: 0,
-		Validation: 0,
+		Name:        body.Name,
+		Description: body.Description,
+		Category:    body.Category,
+		ScientificName: body.ScientificName,
 	}
 
 	if err := repositories.CreateSpecies(&species); err != nil {
@@ -40,14 +42,14 @@ func CreateSpecies(c *gin.Context) {
 	}
 
 	folderName := fmt.Sprintf("%03d-%s", species.ID, species.Name)
-	if err := os.MkdirAll(os.Getenv("DATASET_STORAGE")+"/train/"+folderName, os.ModePerm); err != nil {
+	if err := os.MkdirAll(os.Getenv("DATASET_STORAGE")+"/training/"+folderName, os.ModePerm); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "failed to create species folder",
 			"error":   err.Error(),
 		})
 		return
 	}
-	if err := os.MkdirAll(os.Getenv("DATASET_STORAGE")+"/test/"+folderName, os.ModePerm); err != nil {
+	if err := os.MkdirAll(os.Getenv("DATASET_STORAGE")+"/testing/"+folderName, os.ModePerm); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "failed to create species folder",
 			"error":   err.Error(),
@@ -67,10 +69,10 @@ func CreateSpecies(c *gin.Context) {
 	})
 }
 
-func GetSpecies(c *gin.Context) {
-	check:=c.Query("trained")
+func GetAllSpecies(c *gin.Context) {
+	check := c.Query("trained")
 	q := ""
-	if check == "false"{
+	if check == "false" {
 		q = "untrained > 0"
 	}
 	species, err := repositories.GetAllSpecies(q)
@@ -83,41 +85,120 @@ func GetSpecies(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, species)
 }
-
-func GetSpeciesImages(c *gin.Context) {
+func GetSpecies(c *gin.Context) {
 	id := c.Param("species_id")
 	species, err := repositories.GetSpeciesById(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "no species found in database",
-			"error":   err.Error(),
-		})
-		return
-	}
-	dir := fmt.Sprintf("%s/train/%03d-%s", os.Getenv("DATASET_STORAGE"), species.ID, species.Name)
-
-	files, err := os.ReadDir(dir)
-	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "cannot read files in folder",
+			"message": "fail to get models from repository",
 			"error":   err.Error(),
 		})
 		return
 	}
+	c.JSON(http.StatusOK, species)
+}
 
-	var list []string
-	for _, f := range files {
-		a := fmt.Sprintf("/species/%s/images/train/%s", id, f.Name())
-		list = append(list, a)
+func GetSpeciesImagesUrl(c *gin.Context) {
+	id := c.Param("species_id")
+	meta := c.Query("meta")
+	trainImg := []models.TrainingImage{}
+	validationImg := []models.ValidationImage{}
+	testImg := []models.TestingImage{}
+
+	if meta == "" {
+		repositories.DB.Find(&trainImg, "species_id=?", id)
+		repositories.DB.Find(&validationImg, "species_id=?", id)
+		repositories.DB.Find(&testImg, "species_id=?", id)
+
+	} else {
+		repositories.DB.Find(&trainImg, "species_id=? AND meta=?", id, meta)
+		repositories.DB.Find(&validationImg, "species_id=? AND meta=?", id, meta)
+		repositories.DB.Find(&testImg, "species_id=? AND meta=?", id, meta)
+	}
+	var result []string
+
+	for _, img := range trainImg {
+		url := fmt.Sprintf("/species/%s/images/training/%s", id, img.FileName)
+		result = append(result, url)
+	}
+	for _, img := range validationImg {
+		url := fmt.Sprintf("/species/%s/images/validation/%s", id, img.FileName)
+		result = append(result, url)
+	}
+	for _, img := range testImg {
+		url := fmt.Sprintf("/species/%s/images/testing/%s", id, img.FileName)
+		result = append(result, url)
 	}
 
-	c.JSON(http.StatusOK, list)
+	if len(result) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "no image found",
+		})
+		return
+	} else {
+		c.JSON(http.StatusOK, result)
+		return
+	}
+}
+
+func GetSpeciesImagesUrlBytype(c *gin.Context) {
+	id := c.Param("species_id")
+	imgtype := c.Param("type")
+	meta := c.Query("meta")
+
+	var img any
+	if imgtype == "training" {
+		img = &[]models.TrainingImage{}
+	} else if imgtype == "validation" {
+		img = &[]models.ValidationImage{}
+	} else if imgtype == "testing" {
+		img = &[]models.TestingImage{}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid image type"})
+		return
+	}
+
+	if meta == "" {
+		repositories.DB.Find(img, "species_id=?", id)
+	} else {
+		repositories.DB.Find(img, "species_id=? AND meta=?", id, meta)
+	}
+
+	var result []string
+	switch v := img.(type) {
+	case *[]models.TrainingImage:
+		for _, img := range *v {
+			url := fmt.Sprintf("/species/%s/images/training/%s", id, img.FileName)
+			result = append(result, url)
+		}
+	case *[]models.ValidationImage:
+		for _, img := range *v {
+			url := fmt.Sprintf("/species/%s/images/validation/%s", id, img.FileName)
+			result = append(result, url)
+		}
+	case *[]models.TestingImage:
+		for _, img := range *v {
+			url := fmt.Sprintf("/species/%s/images/testing/%s", id, img.FileName)
+			result = append(result, url)
+		}
+	}
+
+	if len(result) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "no image found",
+		})
+		return
+	} else {
+		c.JSON(http.StatusOK, result)
+		return
+	}
 }
 
 func GetSpeciesImage(c *gin.Context) {
+	
 	id := c.Param("species_id")
 	datatype := c.Param("type")
-	img := c.Param("file")
+	img := c.Param("name")
 	species, err := repositories.GetSpeciesById(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -126,15 +207,19 @@ func GetSpeciesImage(c *gin.Context) {
 		})
 		return
 	}
-	dir := fmt.Sprintf("%s/%s/%03d-%s/%s", os.Getenv("DATASET_STORAGE"),datatype, species.ID, species.Name, img)
+	
+	dir := fmt.Sprintf("%s/%s/%03d-%s/%s", os.Getenv("DATASET_STORAGE"), datatype, species.ID, species.Name, img)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "image not found",
 			"error":   err.Error(),
 		})
 		return
+	}else {
+		c.File(dir)
+		return
 	}
-	c.File(dir)
+	// return
 }
 
 func DeleteUntrainedImage(c *gin.Context) {

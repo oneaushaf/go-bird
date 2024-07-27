@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
@@ -9,8 +10,53 @@ import (
 	"github.com/oneaushaf/go-bird/repositories"
 	"github.com/oneaushaf/go-bird/services"
 )
-func PredictV2(c *gin.Context) {
-	model := c.Param("model")
+
+func GetPrediction(c *gin.Context) {
+	id := c.Param("prediction_id")
+	p := models.Predcition{}
+	type result struct{
+		models.Predcition
+		Species string
+	}
+
+	
+
+	err := repositories.DB.First(&p, "id=?", id).Error
+	if err!= nil{
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to get data",
+			"error":   err.Error(),
+		})
+		return	
+	}
+	link := fmt.Sprintf("/predictions/%d/image",p.ID)
+	p.Image = link
+	body := result{
+		Predcition: p,
+		Species : "/species/"+p.Result[:3],
+	}
+	c.JSON(http.StatusOK, body)
+}
+
+func GetPredictionImage(c *gin.Context){
+	id := c.Param("prediction_id")
+	p := models.Predcition{}
+
+	err := repositories.DB.First(&p, "id=?", id).Error
+	if err!= nil{
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to get data",
+			"error":   err.Error(),
+		})
+		return	
+	}
+	c.File(p.Image)
+}
+
+func Predict(c *gin.Context) {
+	model := c.Query("model")
+	user_id_str,_ := c.Get("user_id")
+	user_id,_ := services.AnyToUint(user_id_str)
 	var m *models.Model
 	var err error
 	if model == "" {
@@ -100,7 +146,7 @@ func PredictV2(c *gin.Context) {
 			})
 			return
 		}
-		species,err := repositories.GetSpeciesById(id)
+		species, err := repositories.GetSpeciesById(id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "failed to get species name",
@@ -110,18 +156,18 @@ func PredictV2(c *gin.Context) {
 		}
 		if value.(float64) > temp {
 			res["result"] = name
-			temp =  value.(float64) 
+			temp = value.(float64)
 		}
 		res["list"].(map[string]interface{})[name] = gin.H{
-			"id" : species.ID,
-			"confidence" : value,
-			"description" : species.Description,
-			"scientific_name" : species.ScientificName,
-			"category" : species.Category,
+			"id":              species.ID,
+			"confidence":      value,
+			"description":     species.Description,
+			"scientific_name": species.ScientificName,
+			"category":        species.Category,
 		}
 	}
 	repositories.CreatePrediction(&models.Predcition{
-		UserID:     1,
+		UserID:     user_id,
 		ModelID:    m.ID,
 		Result:     result["result"].(string),
 		Confidence: result["confidence"].(map[string]interface{})[result["result"].(string)].(float64),
@@ -129,7 +175,7 @@ func PredictV2(c *gin.Context) {
 	})
 	c.JSON(http.StatusOK, res)
 }
-func Predict(c *gin.Context) {
+func PredictV2(c *gin.Context) {
 	model := c.Param("model")
 	var m *models.Model
 	var err error
@@ -207,8 +253,10 @@ func Predict(c *gin.Context) {
 		result["result"] = "unable to classify"
 	}
 
+	userID, _ := c.Get("user_id")
+	id := userID.(uint)
 	repositories.CreatePrediction(&models.Predcition{
-		UserID:     1,
+		UserID:     id,
 		ModelID:    m.ID,
 		Result:     result["result"].(string),
 		Confidence: result["confidence"].(map[string]interface{})[result["result"].(string)].(float64),

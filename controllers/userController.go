@@ -114,6 +114,24 @@ func GetUser(c *gin.Context){
 	}
 	c.JSON(http.StatusOK,user)
 }
+func GetAuth(c *gin.Context){
+	id,ok := c.Get("user_id")
+	if !ok{
+		c.JSON(http.StatusBadRequest,gin.H{
+			"message":"invalid request",
+		})
+	}
+	
+	user:= models.User{} 
+	err := repositories.DB.First(&user,"id=?",id).Error
+	if err!=nil {
+		c.JSON(http.StatusInternalServerError,gin.H{
+			"message":"fail to get user from repository",
+			"error":err.Error(),
+		})
+	}
+	c.JSON(http.StatusOK,user)
+}
 
 func GetUsers(c *gin.Context){
 	users,err := repositories.GetUsers()

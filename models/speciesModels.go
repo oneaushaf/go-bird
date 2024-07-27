@@ -14,5 +14,8 @@ type Species struct {
 	Validation     uint
 	ScientificName string
 	Category       string
-	Datasets       []Dataset
+	// Datasets       []Dataset //to be deleted
+	TrainImages    []TrainingImage
+	ValidateImages []ValidationImage
+	TestImages     []TestingImage
 }

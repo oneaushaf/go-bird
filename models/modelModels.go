@@ -15,13 +15,19 @@ type Model struct {
 	IsUsed      bool           `gorm:"type:bool"`
 }
 
+type Input struct {
+	BaseModel        string `json:"base_model,omitempty"`
+	CallbackPatience int    `json:"callback_pattience,omitempty"`
+	Epochs           int    `json:"epochs,omitempty"`
+	ImageCount       int    `json:"image_count,omitempty"`
+}
+
 type Data struct {
 	BestAccuracy    float64 `json:"best_accuracy,omitempty"`
 	BestLoss        float64 `json:"best_loss,omitempty"`
 	BestValAccuracy float64 `json:"best_val_accuracy,omitempty"`
 	BestValLoss     float64 `json:"best_val_loss,omitempty"`
 	TrainingTime    float64 `json:"training_time,omitempty"`
-	Epochs          int     `json:"epochs,omitempty"`
 }
 
 type TestResult struct {

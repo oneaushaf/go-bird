@@ -1,0 +1,90 @@
+def encrypt(string : str,key :str):
+    #remove ws
+    temp = string.replace(" ","").replace("\n","")
+
+    n = len(key)
+
+    #ad xs
+    if len(temp) % n!=0:
+        temp+="X"*(n-len(temp)%n)
+    
+    #separate
+    separated = [temp[i:i+n] for i in range(0, len(temp), n)]
+
+    #reverse 
+    separated.reverse()
+
+    result = ""
+    keys = str_to_int_arr(key)
+    for i in separated:
+        temp = ""
+        for j in range(len(i)):
+            base = ord('A') if i[j].isupper() else ord('a')
+            temp+=chr((ord(i[j]) - base + keys[j]) % 26 + base)
+        result +=temp
+    print(string)
+    print(result)
+
+def str_to_int_arr(s: str) -> list[int]:
+    result = []
+    for char in s:
+        if 'a' <= char <= 'z':  # Check if the character is a lowercase letter
+            result.append(ord(char) - ord('a') + 1)
+        elif 'A' <= char <= 'Z':  # Check if the character is an uppercase letter
+            result.append(ord(char) - ord('A') + 1)
+        else:
+            raise ValueError("The string contains non-alphabet characters.")
+    return result
+
+
+
+
+
+def decrypt(string:str,cipher:str,len_key : int):
+    temp = string.replace(" ","").replace("\n","")
+
+    #ad xs
+    if len(temp) % len_key!=0:
+        temp+="X"*(len_key-len(temp)%len_key)
+    one = temp[0:len_key]
+    two = cipher[-len_key:len(cipher)]
+    idx = str_to_int_arr(cipher[-len_key:len(cipher)])
+
+    result = ""
+    for j in range(len(one)):
+        base = ord('A') if one[j].isupper() else ord('a')
+        result+=(chr((idx[j] - (ord(one[j]) - base) -2) % 26 + base )).lower()
+
+    print(result)
+    return result
+    
+string = "This is A Very Secret Information"
+cipher = "bwwNBhzvqxxbRdjrAnsvlIEuvMprim"
+len_key = 5
+assert decrypt(string,cipher,len_key) == "shipd"
+
+string = "Shipd payouts is coming soon cant wait to get my first payout"
+cipher = "kuWMSRiuoptijnxudlyusdbysbmirudhrdjhytbdhcqznjomIiheyj"
+len_key = 6
+assert decrypt(string,cipher,len_key) == "payout"
+
+string = (
+        "if this information goes out people" 
+        "would go in a riot to throw the government"
+        "so we cant let anyone ever sees this message"
+         )
+cipher = (
+    "aojxxyvcarrxlthlCKPNPCQGBCLReaw"
+    "grjbnatjjvtoaqrlqfdhwijjyuabhzq"
+    "rawnafkbpayblxjtpcljuirbyanxwhn"
+    "tertmjvstguktnctjcj"
+)
+len_key = 28
+assert decrypt(string,cipher,len_key) == "iveseenthemessagemrpresident"
+
+
+string = "the government is"
+cipher = "iuljpjytsynspnmFYR"
+len_key = 18
+assert decrypt(string,cipher,len_key) == "omgcantbelievethat"
+
